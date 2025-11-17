@@ -29,6 +29,30 @@ Outputs are written to the `outputs/` directory:
 
 Hourly PV profiles are cached under `data/solar/` so repeated runs do not re-download NASA data.
 
+## Exporting dashboard-ready data
+
+The interactive map hosted under `docs/` expects a compact CSV with one row per site/configuration plus pre-computed LCOE estimates. Generate it with:
+
+```bash
+python -m baseload.dashboard_data \
+    --summary outputs/annual_capacity_factors.csv \
+    --output outputs/dashboard_dataset.csv
+```
+
+Behind the scenes the helper uses the summary file to compute a `Location` label (`LatXX.XX_LonYY.YY`), copies the latitude/longitude, and estimates LCOE via a simple cost model (default: $700/kW PV, $150/kWh battery, 7% discount rate, 25-year lifetime, and modest fixed O&M fractions). You can edit those constants inside `baseload/dashboard_data.py` if your study uses different financial assumptions. The resulting CSV works with the dashboard UI as well as the included sample data (`docs/sample_dashboard_data.csv`).
+
+## GitHub Pages dashboard
+
+Everything in `docs/` is a static Tailwind/Leaflet/D3 dashboard suitable for GitHub Pages. After pushing the repository you can enable Pages and point it at the `docs` folder to serve `index.html`. The page lets you upload any CSV produced by `baseload.dashboard_data` or quickly preview the bundled sample via the “Load bundled sample data” button.
+
+To preview locally run:
+
+```bash
+python -m http.server --directory docs 8000
+```
+
+and visit `http://localhost:8000` in your browser. The current solar-only simulation sweep means the wind slider snaps to the closest available data (0 GW in the sample) but the control remains in the UI for future hybrid studies.
+
 ## Configuration
 
 Key modeling assumptions live in the code:
