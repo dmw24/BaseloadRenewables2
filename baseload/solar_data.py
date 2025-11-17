@@ -124,6 +124,7 @@ def fetch_hourly_pv_profile(
             datetimes=datetimes,
             pv_kwh_per_kw=values,
         )
+    profile = _download_hourly_power(latitude, longitude, year)
     _save_profile(cache_path, profile)
     return profile
 
