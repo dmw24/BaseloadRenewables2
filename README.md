@@ -1,1 +1,39 @@
-# BaseloadRenewables2
+# Baseload Renewables Model
+
+This repository contains a modular Python workflow that:
+
+1. Selects globally distributed land-based solar sites using a curated pool of major load centers and greedy farthest-point sampling.
+2. Downloads hourly NASA POWER solar resource data for each site and converts it to PV output per installed kW.
+3. Runs an annual baseload simulation to evaluate how different solar/battery build-outs serve a constant 1 GW load.
+
+## Requirements
+
+The project only relies on the Python standard library. A modern CPython 3.10+ interpreter with internet access (for NASA POWER API calls) is sufficient.
+
+## Usage
+
+Create a virtual environment if desired and run the model end-to-end (selecting 10 sites, downloading 2021 data, and simulating all combinations of 1–8 GW PV with 1–15 GWh batteries):
+
+```bash
+python main.py --sites 10 --year 2021
+```
+
+Outputs are written to the `outputs/` directory:
+
+- `selected_sites.csv`: latitude/longitude for each chosen site.
+- `hourly_profiles/<site>/site_X_hourly_profiles.csv`: 8,760-hour traces for each PV/battery configuration (includes solar output, battery state-of-charge, unmet load, and overproduction).
+- `hourly_profiles/<site>/site_X_annual_summary.csv`: Annual stats for every configuration at the site.
+- `annual_capacity_factors.csv`: Aggregated capacity-factor table across all sites.
+
+Hourly PV profiles are cached under `data/solar/` so repeated runs do not re-download NASA data.
+
+## Configuration
+
+Key modeling assumptions live in the code:
+
+- NASA POWER parameter `ALLSKY_SFC_SW_DWN` (global horizontal irradiance) drives PV output.
+- A fixed derate factor of 0.8 converts irradiance to delivered energy per kW installed.
+- Battery round-trip efficiency is set to 90% (split evenly between charge/discharge losses).
+- Batteries start half full each year.
+
+You can adjust these constants in `baseload/solar_data.py` and `baseload/simulation.py` as needed.
