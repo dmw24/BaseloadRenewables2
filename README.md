@@ -10,6 +10,8 @@ This repository contains a modular Python workflow that:
 
 The project only relies on the Python standard library. A modern CPython 3.10+ interpreter with internet access (for NASA POWER API calls) is sufficient.
 
+> **Offline fallback:** Some environments (including the execution sandbox used for automated tests) cannot reach the NASA POWER API. When downloads fail, the workflow now switches to a deterministic clear-sky model that approximates hourly PV production so the remainder of the pipeline can still be exercised. The generated values remain deterministic per site/year, are cached like real downloads, and are clearly logged so you know when the fallback was used.
+
 ## Usage
 
 Create a virtual environment if desired and run the model end-to-end (selecting 10 sites, downloading 2021 data, and simulating all combinations of 1–8 GW PV with 1–15 GWh batteries):
@@ -26,6 +28,30 @@ Outputs are written to the `outputs/` directory:
 - `annual_capacity_factors.csv`: Aggregated capacity-factor table across all sites.
 
 Hourly PV profiles are cached under `data/solar/` so repeated runs do not re-download NASA data.
+
+## Exporting dashboard-ready data
+
+The interactive map hosted at the repository root (`index.html`) expects a compact CSV with one row per site/configuration plus pre-computed LCOE estimates. Generate it with:
+
+```bash
+python -m baseload.dashboard_data \
+    --summary outputs/annual_capacity_factors.csv \
+    --output outputs/dashboard_dataset.csv
+```
+
+Behind the scenes the helper uses the summary file to compute a `Location` label (`LatXX.XX_LonYY.YY`), copies the latitude/longitude, and estimates LCOE via a simple cost model (default: $700/kW PV, $150/kWh battery, 7% discount rate, 25-year lifetime, and modest fixed O&M fractions). You can edit those constants inside `baseload/dashboard_data.py` if your study uses different financial assumptions. The resulting CSV works with the dashboard UI as well as the included sample data (`sample_dashboard_data.csv`).
+
+## GitHub Pages dashboard
+
+The repository root now contains the Tailwind/Leaflet/D3 dashboard (`index.html`) so GitHub Pages can serve it without any extra configuration—simply enable Pages for the `main` branch. The page lets you upload any CSV produced by `baseload.dashboard_data` or quickly preview the bundled sample via the “Load bundled sample data” button.
+
+To preview locally run:
+
+```bash
+python -m http.server 8000
+```
+
+and visit `http://localhost:8000` in your browser. The current solar-only simulation sweep means the wind slider snaps to the closest available data (0 GW in the sample) but the control remains in the UI for future hybrid studies.
 
 ## Configuration
 

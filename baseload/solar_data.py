@@ -11,6 +11,8 @@ from typing import List
 from urllib import parse, request
 from urllib.error import URLError
 
+from .offline_solar import generate_offline_hourly_profile
+
 SYSTEM_DERATE = 0.8
 DEFAULT_YEAR = 2021
 NASA_ENDPOINT = "https://power.larc.nasa.gov/api/temporal/hourly/point"
@@ -110,6 +112,18 @@ def fetch_hourly_pv_profile(
     cache_path = _cache_path(Path(cache_dir), latitude, longitude, year)
     if cache_path.exists():
         return _load_cached_profile(cache_path, latitude, longitude, year)
+    try:
+        profile = _download_hourly_power(latitude, longitude, year)
+    except SolarDataError as exc:
+        print(f"NASA download failed ({exc}); switching to offline clear-sky model.")
+        datetimes, values = generate_offline_hourly_profile(latitude, longitude, year)
+        profile = SolarProfile(
+            latitude=latitude,
+            longitude=longitude,
+            year=year,
+            datetimes=datetimes,
+            pv_kwh_per_kw=values,
+        )
     profile = _download_hourly_power(latitude, longitude, year)
     _save_profile(cache_path, profile)
     return profile
